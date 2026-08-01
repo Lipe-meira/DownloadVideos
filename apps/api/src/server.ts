@@ -1,5 +1,6 @@
 import Fastify from "fastify";
 import { analyzeUrlSchema } from "@youtube-download-videos/shared";
+import { parseSafeHttpUrl } from "@youtube-download-videos/shared";
 
 const app = Fastify({
     logger: true
@@ -24,12 +25,24 @@ app.post("/api/analyze", async (req, reply) => {
         });
     }
 
-    const { url } = result.data;
+    try {
+        const safeURL = parseSafeHttpUrl(result.data?.url ?? "");
 
-    return {
-        ok: true,
-        url,
-    };
+        return {
+            ok: true,
+            url: safeURL.href
+        };
+    } catch (error) {
+        const message =
+            error instanceof Error
+                ? error.message
+                : "URL inválida.";
+
+        return reply.status(400).send({
+            ok: false,
+            message
+        });
+    }
 });
 
 const port = Number(process.env.PORT ?? 3333);
